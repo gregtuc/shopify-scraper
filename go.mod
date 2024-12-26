@@ -1,3 +1,3 @@
-module github.com/gregtuc/shopify-scraper
+module github.com/gtucker/shopify-scraper
 
-go 1.23.4
+go 1.23
