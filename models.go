@@ -21,6 +21,23 @@ type Product struct {
 	Variants    []Variant     `json:"variants"`
 	Images      []Image       `json:"images"`
 	Options     []Option      `json:"options"`
+	Status      string        `json:"status,omitempty"`
+	Published   bool          `json:"published,omitempty"`
+}
+
+// Collection represents a Shopify collection
+type Collection struct {
+	ID          int64         `json:"id"`
+	Handle      string        `json:"handle"`
+	Title       string        `json:"title"`
+	Description string        `json:"body_html"`
+	PublishedAt time.Time     `json:"published_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
+	Image       *Image        `json:"image,omitempty"`
+	Products    []Product     `json:"products,omitempty"`
+	Tags        StringOrArray `json:"tags"`
+	SortOrder   string        `json:"sort_order"`
+	Published   bool          `json:"published"`
 }
 
 // StringOrArray can unmarshal both a string or an array of strings
@@ -42,6 +59,12 @@ func (sa *StringOrArray) UnmarshalJSON(data []byte) error {
 	}
 	*sa = a
 	return nil
+}
+
+// Price represents a monetary value
+type Price struct {
+	Amount       string `json:"amount"`
+	CurrencyCode string `json:"currency_code"`
 }
 
 // Variant represents a product variant
@@ -67,6 +90,8 @@ type Variant struct {
 	WeightUnit          string    `json:"weight_unit"`
 	InventoryQuantity   int       `json:"inventory_quantity"`
 	RequiresShipping    bool      `json:"requires_shipping"`
+	InventoryPolicy     string    `json:"inventory_policy,omitempty"`
+	Available           bool      `json:"available,omitempty"`
 }
 
 // Image represents a product image
