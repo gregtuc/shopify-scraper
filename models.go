@@ -1,22 +1,47 @@
 package shopify
 
-import "time"
+import (
+	"encoding/json"
+	"strings"
+	"time"
+)
 
 // Product represents a Shopify product
 type Product struct {
-	ID          int64     `json:"id"`
-	Title       string    `json:"title"`
-	Handle      string    `json:"handle"`
-	Description string    `json:"description"`
-	PublishedAt time.Time `json:"published_at"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	Vendor      string    `json:"vendor"`
-	ProductType string    `json:"product_type"`
-	Tags        []string  `json:"tags"`
-	Variants    []Variant `json:"variants"`
-	Images      []Image   `json:"images"`
-	Options     []Option  `json:"options"`
+	ID          int64         `json:"id"`
+	Title       string        `json:"title"`
+	Handle      string        `json:"handle"`
+	Description string        `json:"body_html"`
+	PublishedAt time.Time     `json:"published_at"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
+	Vendor      string        `json:"vendor"`
+	ProductType string        `json:"product_type"`
+	Tags        StringOrArray `json:"tags"`
+	Variants    []Variant     `json:"variants"`
+	Images      []Image       `json:"images"`
+	Options     []Option      `json:"options"`
+}
+
+// StringOrArray can unmarshal both a string or an array of strings
+type StringOrArray []string
+
+// UnmarshalJSON implements json.Unmarshaler
+func (sa *StringOrArray) UnmarshalJSON(data []byte) error {
+	// First try as string
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*sa = strings.Split(s, " ")
+		return nil
+	}
+
+	// If that fails, try as array
+	var a []string
+	if err := json.Unmarshal(data, &a); err != nil {
+		return err
+	}
+	*sa = a
+	return nil
 }
 
 // Variant represents a product variant
@@ -41,6 +66,7 @@ type Variant struct {
 	Weight              float64   `json:"weight"`
 	WeightUnit          string    `json:"weight_unit"`
 	InventoryQuantity   int       `json:"inventory_quantity"`
+	RequiresShipping    bool      `json:"requires_shipping"`
 }
 
 // Image represents a product image
@@ -53,6 +79,7 @@ type Image struct {
 	Width      int       `json:"width"`
 	Height     int       `json:"height"`
 	Src        string    `json:"src"`
+	Alt        string    `json:"alt"`
 	VariantIDs []int64   `json:"variant_ids"`
 }
 

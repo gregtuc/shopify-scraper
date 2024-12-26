@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -47,8 +48,21 @@ func WithUserAgent(userAgent string) ClientOption {
 	}
 }
 
+// formatDomain ensures the domain is in the correct format
+func formatDomain(domain string) string {
+	// Remove protocol if present
+	domain = strings.TrimPrefix(domain, "http://")
+	domain = strings.TrimPrefix(domain, "https://")
+
+	// Remove www. if present
+	domain = strings.TrimPrefix(domain, "www.")
+
+	return domain
+}
+
 // GetProducts fetches products from a Shopify store
 func (c *Client) GetProducts(domain string) ([]Product, error) {
+	domain = formatDomain(domain)
 	url := fmt.Sprintf("https://%s/products.json", domain)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -58,6 +72,12 @@ func (c *Client) GetProducts(domain string) ([]Product, error) {
 
 	req.Header.Set("User-Agent", c.userAgent)
 	req.Header.Set("Accept", "application/json")
+	// Add headers to look like a browser request
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Referer", fmt.Sprintf("https://%s/", domain))
+	req.Header.Set("Sec-Fetch-Dest", "empty")
+	req.Header.Set("Sec-Fetch-Mode", "cors")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -66,7 +86,8 @@ func (c *Client) GetProducts(domain string) ([]Product, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(body))
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -87,6 +108,7 @@ func (c *Client) GetProducts(domain string) ([]Product, error) {
 
 // GetProduct fetches a single product by handle
 func (c *Client) GetProduct(domain, handle string) (*Product, error) {
+	domain = formatDomain(domain)
 	url := fmt.Sprintf("https://%s/products/%s.json", domain, handle)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -96,6 +118,12 @@ func (c *Client) GetProduct(domain, handle string) (*Product, error) {
 
 	req.Header.Set("User-Agent", c.userAgent)
 	req.Header.Set("Accept", "application/json")
+	// Add headers to look like a browser request
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+	req.Header.Set("Referer", fmt.Sprintf("https://%s/products/%s", domain, handle))
+	req.Header.Set("Sec-Fetch-Dest", "empty")
+	req.Header.Set("Sec-Fetch-Mode", "cors")
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -104,7 +132,8 @@ func (c *Client) GetProduct(domain, handle string) (*Product, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(body))
 	}
 
 	body, err := io.ReadAll(resp.Body)
